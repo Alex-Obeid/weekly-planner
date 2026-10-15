@@ -2,7 +2,9 @@
 
 A weekly timetable for planning study time around a fixed class schedule. Each block takes up space in proportion to the time it reserves, so you can see at a glance where the week goes.
 
-It is a single HTML file with no build step and no dependencies apart from Google Fonts.
+The app is a single HTML file with no build step and no dependencies apart from Google Fonts.
+A small shell sits beside it — a manifest, a service worker and generated icons — so it can
+be installed as a desktop app.
 
 ![Weekly Planner screenshot](docs/screenshot.png)
 
@@ -24,11 +26,13 @@ It is a single HTML file with no build step and no dependencies apart from Googl
 
 Open `index.html` in any modern browser. That's it.
 
-To host it, enable **GitHub Pages** for this repository (Settings → Pages → Deploy from branch → `main` / root), and it will be served at `https://<user>.github.io/weekly-planner/`.
+It is also live on **GitHub Pages** at <https://alex-obeid.github.io/weekly-planner/>, deployed from
+`main` / root — pushing to `main` redeploys it.
 
 ## Installing it as an app
 
-Served over http(s), the planner is a PWA: open it in Chrome or Edge and choose
+Served over http(s), the planner is a PWA. Open <https://alex-obeid.github.io/weekly-planner/> in
+Chrome or Edge and choose
 **Install this site as an app** (the install icon at the right of the address bar, or
 ⋯ → Apps → Install). You get a Start-menu and taskbar entry that opens in its own window
 with no browser chrome.
@@ -65,7 +69,7 @@ The status text next to the buttons tells you which one is active ("Saved in thi
 ### Backing up and moving your week
 
 `localStorage` is scoped to one browser **and one address**. `file:///…/index.html`,
-`https://<user>.github.io/weekly-planner/` and `http://localhost:8000` are three separate
+<https://alex-obeid.github.io/weekly-planner/> and `http://localhost:8000` are three separate
 origins holding three separate, unrelated weeks — entering your timetable at one does not
 make it appear at the others, and clearing site data erases it with no copy anywhere.
 
@@ -100,13 +104,17 @@ In local mode everything is stored as `{ blocks: [...], labels: [...] }` under t
 ## Project structure
 
 ```
-index.html        the whole app: markup, styles and script
+index.html              the whole app: markup, styles and script
+manifest.webmanifest    name, icons and standalone display for the installed app
+sw.js                   offline shell - bump VERSION whenever index.html changes
+icons/                  generated app icons
+tools/build-icons.py    generates icons/ - edit this, never the PNGs
 docs/screenshot.png
 README.md
-CLAUDE.md         notes for working on this repo with Claude Code
+CLAUDE.md               notes for working on this repo with Claude Code
 ```
 
-Inside `index.html` the script is organised into sections marked with `// ---` comments: state, persistence, analysis (clashes and free gaps), week grid, drag to move/resize, labels panel, block form, copy-day form, and boot.
+Inside `index.html` the script is organised into sections marked with `// ---` comments: state, persistence, analysis (clashes and free gaps), week grid, drag to move/resize, labels panel, block form, copy-day form, backup (export and import), the installable-app hooks, and boot.
 
 ## Customising
 
@@ -118,4 +126,4 @@ Inside `index.html` the script is organised into sections marked with `// ---` c
 
 ## Ideas for later
 
-Real dates and week-to-week navigation, exam/deadline markers, marking blocks done or skipped with planned-vs-done hours, a phone day view with swipe, a "now and next" card, a focus timer, weekly targets per label, JSON/.ics export, and links to a reading roadmap.
+Real dates and week-to-week navigation, exam/deadline markers, marking blocks done or skipped with planned-vs-done hours, a phone day view with swipe, a "now and next" card, a focus timer, weekly targets per label, .ics export, and links to a reading roadmap.
