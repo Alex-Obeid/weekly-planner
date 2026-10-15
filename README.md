@@ -10,13 +10,14 @@ be installed as a desktop app.
 
 ## Features
 
-- **Week grid, 7 AM to 11 PM**, Monday to Sunday, in 12-hour (AM/PM) time. Today's column is tinted and a line marks the current time.
+- **Week grid over your waking hours**, Monday to Sunday, in 12-hour (AM/PM) time. Set *Awake ... to ...* above the grid and everything follows it: the spine, the free-time gaps and both share bars. Defaults to 7 AM–11 PM; bedtime can be midnight, and the shortest day you can set is four hours. Today's column is tinted and a line marks the current time.
 - **Add, edit and delete blocks.** Click any empty slot or free gap to add a block there; click a block to edit it. Each block has a title, label, day(s), start and end time (15-minute steps) and notes.
 - **Drag to move and resize.** Drag a block up/down to change its time or sideways to change its day; drag its bottom edge to change its length. Snaps to 15 minutes. On touch screens, press and hold a block briefly before dragging, so normal swipes still scroll.
 - **Repeating blocks.** Pick several days in the form to create a repeating block (shown with a ↻ icon). When editing one, choose *All repeats* or *Only this day*. Adding or removing days under *All repeats* adds or removes the copies.
 - **Duplicate.** Duplicate a single block to other days, or copy a whole day (click the day name or *Copy day*) to other days, either alongside their existing blocks or replacing them.
 - **Clash warnings.** Overlapping blocks get a red outline and a "!" badge. A pill above the grid counts clashes and expands into a clickable list. The edit form also warns if the time you are setting overlaps something (it still lets you save).
 - **Free time.** Gaps of 30 minutes or more show as hatched "free · 1h 30m" areas; click one to fill it. A switch turns this off.
+- **A "NOW:" bar.** Whatever is running right now appears as a thick bar above the grid, in its label's colour, with its name, label, note and time. It refreshes every 30 seconds, clicking it opens that block, and it disappears when nothing is scheduled.
 - **Labels.** Colour-coded categories (class, study, gym…) that you can add, rename, recolour and delete.
 - **Share bars, one per half of the week.** **Mon–Fri** and **Sat–Sun** get a pill-shaped bar each, because a weekday and a weekend are different kinds of day and a single average hides both. Each splits its own span (80 h and 32 h of 7 AM–11 PM) by label and ends with everything still unscheduled as a hatched **Free** segment, so each bar adds up to 100%. Segments are labelled with percentages — dropped automatically when a segment is too narrow to show one — and the legend below gives each label's **total hours**, listing only the labels used in that half. Hovering either shows both figures. Overlapping blocks are counted once when working out free time, so a clash never pushes it negative.
 - **Backup, export and import.** *Backup* downloads your whole week as a `.json` file or copies it to the clipboard, and takes it back in by file or paste — either added alongside what's already there or replacing it, behind a two-step confirm. This is how you move a week between browsers, devices and addresses.
@@ -99,7 +100,7 @@ refused with the week untouched.
 { id, name, color }   // color: "#RRGGBB"
 ```
 
-In local mode everything is stored as `{ blocks: [...], labels: [...] }` under the `rcvd-planner-v1` key. The free-time switch is stored separately under `rcvd-planner-v1-free`.
+In local mode everything is stored as `{ blocks: [...], labels: [...] }` under the `rcvd-planner-v1` key. Two settings sit beside it rather than inside it: the free-time switch under `rcvd-planner-v1-free`, and your awake hours as `{ start, end }` (minutes from midnight) under `rcvd-planner-v1-day`. Neither travels with an export.
 
 ## Project structure
 
@@ -118,7 +119,7 @@ Inside `index.html` the script is organised into sections marked with `// ---` c
 
 ## Customising
 
-- **Visible hours:** change `DAY_START` and `DAY_END` (minutes from midnight) at the top of the script.
+- **Visible hours:** set in the app (*Awake ... to ...*). `DAY_START` and `DAY_END` in the script are only the starting values for a browser that has never set them; `DAY_MIN_SPAN` is the four-hour floor.
 - **Snap size:** `SNAP` (drag) and the `15` step in the time dropdowns.
 - **Minimum free gap shown:** `MIN_GAP` (minutes).
 - **Row height:** the `--ppm` CSS variable (pixels per minute).

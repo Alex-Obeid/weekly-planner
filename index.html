@@ -69,6 +69,20 @@ button { cursor: pointer; }
 .btn.danger { color: var(--danger); }
 .btn.danger.armed { background: var(--danger); border-color: var(--danger); color: #fff; }
 .status { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+.awake { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); }
+.awake select { border: 1px solid var(--line); border-radius: 6px; padding: 3px 5px; background: var(--surface); font-family: var(--mono); font-size: 12px; color: var(--ink); }
+.awake select:hover { border-color: var(--ink); }
+.offscreen { color: var(--danger); }
+/* What is running right now, above the grid. Carries its label's colour, so it
+   reads as the same object as the card below it; text is white or ink via textOn(). */
+.now { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 13px 16px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.12); min-width: 0; cursor: pointer; }
+.now:hover { filter: brightness(1.04); }
+.now .lede { font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; opacity: 0.8; flex: none; }
+.now .body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.now .ttl { font-size: 17px; font-weight: 700; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.now .nmeta { font-size: 12.5px; opacity: 0.72; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.now .ntm { font-family: var(--mono); font-size: 13px; opacity: 0.9; flex: none; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .now { gap: 10px; padding: 11px 13px; } .now .ttl { font-size: 15.5px; } .now .ntm { display: none; } }
 .switch { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); cursor: pointer; user-select: none; }
 .switch input { appearance: none; width: 32px; height: 18px; border-radius: 99px; background: var(--line); position: relative; margin: 0; cursor: pointer; transition: background 0.15s; }
 .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); transition: transform 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.25); }
@@ -128,9 +142,11 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
 .blk .t span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .blk .t svg { flex: none; opacity: 0.8; }
 .blk .tm { font-family: var(--mono); font-size: 10.5px; opacity: 0.85; font-variant-numeric: tabular-nums; }
-.blk .lb { font-size: 10.5px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.05em; }
+/* Notes sit below the time, dimmer than it so they read as secondary. Opacity
+   rather than a fixed colour, because the text is white or ink depending on the label. */
+.blk .nt { font-size: 10.5px; line-height: 1.3; opacity: 0.62; overflow: hidden; }
 .blk.tight { flex-direction: row; align-items: center; gap: 6px; padding-block: 1px; }
-.blk.tight .lb { display: none; }
+.blk.tight .nt { display: none; }
 .blk .rz { position: absolute; left: 0; right: 0; bottom: 0; height: 9px; cursor: ns-resize; }
 .blk .rz::after { content: ""; position: absolute; left: 50%; bottom: 3px; width: 22px; height: 3px; margin-left: -11px; border-radius: 2px; background: currentColor; opacity: 0; transition: opacity 0.12s; }
 .blk:hover .rz::after, .blk.dragging .rz::after { opacity: 0.45; }
@@ -201,6 +217,7 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
     <div class="tools">
       <span id="clash-slot"></span>
       <label class="switch" for="free-toggle"><input id="free-toggle" type="checkbox" checked> Show free time</label>
+      <span class="awake">Awake <select id="d-start" aria-label="Time you wake up"></select> to <select id="d-end" aria-label="Time you go to sleep"></select></span>
     </div>
     <div class="tools">
       <span class="status" id="status">Connecting…</span>
@@ -212,8 +229,9 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
   <div class="clashlist" id="clashlist" hidden></div>
 
   <div id="empty" class="empty" hidden><b>No blocks yet.</b> Click any time slot in the grid below, or use “Add block”, to place your first session.</div>
+  <button type="button" class="now" id="now" hidden></button>
   <div class="gridbox"><div class="grid" id="grid"></div></div>
-  <p class="note">On a phone, press and hold a block for a moment, then drag. Moving a repeating block with drag changes only that day. Click a day name to copy that day.</p>
+  <p class="note offscreen" id="offscreen" hidden></p>
 
   <div class="panel">
     <div class="bar">
@@ -333,8 +351,21 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
   "use strict";
   const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const DAYS_LONG = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  const DAY_START = 7 * 60, DAY_END = 23 * 60, SNAP = 15, MIN_GAP = 30;
+  // MIN_GAP matches SNAP so the smallest gap you can create is also the smallest
+  // one the grid will show you. NOTE_WORDS caps what a card prints of a note.
+  const SNAP = 15, MIN_GAP = 15, NOTE_WORDS = 12;
   const LOCAL_KEY = "rcvd-planner-v1";
+  // The visible day runs from when you wake to when you sleep. These are the only
+  // two settings that are not constants: everything else on the grid derives from
+  // them, so they load before the first render and re-render the whole page when
+  // changed. Kept beside the week rather than inside it, like the free-time switch.
+  const DAY_KEY = LOCAL_KEY + "-day", DAY_MIN_SPAN = 4 * 60, DAY_MAX = 24 * 60;
+  let DAY_START = 7 * 60, DAY_END = 23 * 60;
+  const validDay = (s, e) => Number.isInteger(s) && Number.isInteger(e) && s >= 0 && e <= DAY_MAX && e - s >= DAY_MIN_SPAN;
+  try {
+    const o = JSON.parse(localStorage.getItem(DAY_KEY) || "null");
+    if (o && validDay(o.start, o.end)) { DAY_START = o.start; DAY_END = o.end; }
+  } catch (e) {}
   const REPEAT_SVG = '<svg viewBox="0 0 16 16" width="11" height="11" aria-label="repeats"><path d="M2.5 7.5a5 5 0 0 1 9-3l1.5 1.5M13 2v4H9M13.5 8.5a5 5 0 0 1-9 3L3 10M3 14v-4h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const COPY_SVG = '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M11 3.5V3a1.5 1.5 0 0 0-1.5-1.5h-6A1.5 1.5 0 0 0 2 3v6a1.5 1.5 0 0 0 1.5 1.5H4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
 
@@ -362,6 +393,9 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
   const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
   const ppmPx = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ppm")) || 1.05;
   const nameOf = (b) => b.title || (labelOf(b.label) ? labelOf(b.label).name : "Untitled");
+  // A card is headed by its label, falling back to its own title when it has none.
+  const cardTitle = (b) => (labelOf(b.label) ? labelOf(b.label).name : null) || b.title || "Untitled";
+  const clipWords = (s, n) => { const w = String(s).trim().split(/\s+/).filter(Boolean); return w.length <= n ? w.join(" ") : w.slice(0, n).join(" ") + "…"; };
   function textOn(hex) {
     const m = /^#?([0-9a-f]{6})$/i.exec(hex || ""); if (!m) return "#111";
     const n = parseInt(m[1], 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
@@ -494,13 +528,16 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
         el.style.background = bg; el.style.color = fg;
         const t = document.createElement("span"); t.className = "t";
         if (b.series && blocks.some((x) => x.series === b.series && x.id !== b.id)) t.insertAdjacentHTML("beforeend", REPEAT_SVG);
-        const tt = document.createElement("span"); tt.textContent = nameOf(b); t.appendChild(tt);
+        const tt = document.createElement("span"); tt.textContent = cardTitle(b); t.appendChild(tt);
         const tm = document.createElement("span"); tm.className = "tm"; tm.textContent = fmtRange(toMin(b.start), toMin(b.end));
         el.append(t, tm);
-        if (L && b.title && hpx >= 58) { const lb = document.createElement("span"); lb.className = "lb"; lb.textContent = L.name; el.appendChild(lb); }
+        // The old label row said the same thing the heading now does; the note takes its place.
+        if (b.note && hpx >= 58) { const nt = document.createElement("span"); nt.className = "nt"; nt.textContent = clipWords(b.note, NOTE_WORDS); el.appendChild(nt); }
         if (hpx >= 24) { const rz = document.createElement("div"); rz.className = "rz"; rz.setAttribute("aria-hidden", "true"); el.appendChild(rz); }
-        el.setAttribute("aria-label", nameOf(b) + ", " + DAYS_LONG[b.day] + " " + fmtRange(toMin(b.start), toMin(b.end)) + (clashes.ids.has(b.id) ? ", overlaps another block" : ""));
-        el.title = nameOf(b) + "\n" + fmtRange(toMin(b.start), toMin(b.end)) + (b.note ? "\n" + b.note : "");
+        // The heading only shows the label, so keep the block's own title here.
+        const full = cardTitle(b) + (b.title && b.title !== cardTitle(b) ? " — " + b.title : "");
+        el.setAttribute("aria-label", full + ", " + DAYS_LONG[b.day] + " " + fmtRange(toMin(b.start), toMin(b.end)) + (clashes.ids.has(b.id) ? ", overlaps another block" : ""));
+        el.title = full + "\n" + fmtRange(toMin(b.start), toMin(b.end)) + (b.note ? "\n" + b.note : "");
         el.addEventListener("pointerdown", (ev) => startPress(ev, b, el, ev.target.classList.contains("rz") ? "resize" : "move"));
         el.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openForm(b); } });
         col.appendChild(el);
@@ -511,7 +548,13 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
         const r = col.getBoundingClientRect(); const y = ev.clientY - r.top;
         let m = DAY_START + Math.floor(y / ppm / 30) * 30; m = clamp(m, DAY_START, DAY_END - 30);
         let end = Math.min(m + 60, DAY_END);
-        if (tgt.classList.contains("gap")) { const gs = +tgt.dataset.s, ge = +tgt.dataset.e; m = clamp(m, gs, ge - 30); end = Math.min(m + 60, ge); }
+        // A gap can now be as short as SNAP, so size the new block to the gap
+        // rather than assuming 30 minutes fit - clamping to ge-30 on a 15-minute
+        // gap would put the start before the gap even begins.
+        if (tgt.classList.contains("gap")) {
+          const gs = +tgt.dataset.s, ge = +tgt.dataset.e, len = Math.min(60, ge - gs);
+          m = clamp(m, gs, ge - len); end = m + len;
+        }
         openForm(null, { day: i, start: toHHMM(m), end: toHHMM(end) });
       });
       colEls.push(col);
@@ -522,6 +565,11 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
     $("empty").hidden = !(ready && blocks.length === 0);
     renderTotals();
     renderClashes(clashes);
+    renderNow();
+    // Narrowing the window hides blocks rather than moving them, so say so.
+    const off = blocks.filter((b) => Math.min(DAY_END, toMin(b.end)) <= Math.max(DAY_START, toMin(b.start))).length;
+    const note = $("offscreen"); note.hidden = !off;
+    if (off) note.textContent = plural(off, "block") + " fall outside " + fmtHour(DAY_START) + "–" + fmtHour(DAY_END) + " and " + (off === 1 ? "is" : "are") + " not shown. Widen your awake hours to see " + (off === 1 ? "it" : "them") + " again.";
   }
 
   function renderClashes(c) {
@@ -544,6 +592,32 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
       r.addEventListener("click", () => openForm(b));
       list.appendChild(r);
     });
+  }
+
+  // The block running right now, if any. Re-read on its own timer rather than
+  // waiting for the next full render, so it never lags the clock by much.
+  function renderNow() {
+    const el = $("now");
+    const d = new Date(), day = (d.getDay() + 6) % 7, m = d.getHours() * 60 + d.getMinutes();
+    const cur = blocks
+      .filter((b) => b.day === day && toMin(b.start) <= m && m < toMin(b.end))
+      .sort((a, b) => toMin(a.start) - toMin(b.start))[0];
+    el.textContent = ""; el.hidden = !cur;
+    if (!cur) return;
+    const L = labelOf(cur.label), bg = L ? L.color : "#9A9A96";
+    el.style.background = bg; el.style.color = textOn(bg);
+    const lede = document.createElement("span"); lede.className = "lede"; lede.textContent = "NOW:";
+    const body = document.createElement("span"); body.className = "body";
+    const ttl = document.createElement("span"); ttl.className = "ttl"; ttl.textContent = nameOf(cur);
+    body.appendChild(ttl);
+    const bits = [];
+    if (L) bits.push(L.name);
+    if (cur.note) bits.push(clipWords(cur.note, NOTE_WORDS));
+    if (bits.length) { const meta = document.createElement("span"); meta.className = "nmeta"; meta.textContent = bits.join(" · "); body.appendChild(meta); }
+    const tm = document.createElement("span"); tm.className = "ntm"; tm.textContent = fmtRange(toMin(cur.start), toMin(cur.end));
+    el.append(lede, body, tm);
+    el.setAttribute("aria-label", "Now: " + nameOf(cur) + ", " + fmtRange(toMin(cur.start), toMin(cur.end)) + ". Open it.");
+    el.onclick = () => openForm(cur);
   }
 
   const fmtPct = (p) => (p < 10 ? p.toFixed(1) : String(Math.round(p))) + "%";
@@ -720,7 +794,17 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
 
   // ------------------------------------------------------------------ block form (add / edit / repeat / duplicate)
   let editing = null, series = null, scope = "one", selDays = new Set(), delArmed = false;
-  ["f-start", "f-end"].forEach((id) => { for (let m = DAY_START; m <= DAY_END; m += 15) { const o = document.createElement("option"); o.value = toHHMM(m); o.textContent = fmt12(m); $(id).appendChild(o); } });
+  // Rebuilt whenever the day window changes. A block outside the new window keeps
+  // its own time: setTime() adds the missing option rather than snapping it.
+  function buildTimeOptions() {
+    ["f-start", "f-end"].forEach((id) => {
+      const sel = $(id), keep = sel.value;
+      sel.textContent = "";
+      for (let m = DAY_START; m <= DAY_END; m += SNAP) { const o = document.createElement("option"); o.value = toHHMM(m); o.textContent = fmt12(m); sel.appendChild(o); }
+      if (keep) setTime(id, keep);
+    });
+  }
+  buildTimeOptions();
   function setTime(id, v) { const sel = $(id); if (![...sel.options].some((o) => o.value === v)) { const m = toMin(v); if (!isNaN(m)) { const o = document.createElement("option"); o.value = v; o.textContent = fmt12(m); sel.appendChild(o); } } sel.value = v; }
   DAYS.forEach((d, i) => {
     const b = document.createElement("button"); b.type = "button"; b.textContent = d; b.dataset.day = i; b.setAttribute("aria-pressed", "false"); b.setAttribute("aria-label", DAYS_LONG[i]);
@@ -869,6 +953,33 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
   });
 
   // ------------------------------------------------------------------ free-time toggle
+  // ------------------------------------------------------------------ awake hours
+  function fillDaySelects() {
+    const mk = (sel, lo, hi, cur) => {
+      sel.textContent = "";
+      for (let m = lo; m <= hi; m += 30) { const o = document.createElement("option"); o.value = String(m); o.textContent = fmt12(m); sel.appendChild(o); }
+      sel.value = String(cur);
+    };
+    // The ranges themselves guarantee a workable day, so no choice can be refused.
+    mk($("d-start"), 0, DAY_MAX - DAY_MIN_SPAN, DAY_START);
+    mk($("d-end"), DAY_MIN_SPAN, DAY_MAX, DAY_END);
+  }
+  function setDay(start, end) {
+    if (!validDay(start, end)) return;
+    DAY_START = start; DAY_END = end;
+    try { localStorage.setItem(DAY_KEY, JSON.stringify({ start, end })); } catch (e) {}
+    fillDaySelects(); buildTimeOptions(); render();
+  }
+  fillDaySelects();
+  $("d-start").addEventListener("change", () => {
+    const s = +$("d-start").value;
+    setDay(s, Math.max(DAY_END, s + DAY_MIN_SPAN));   // push bedtime later if it would crowd
+  });
+  $("d-end").addEventListener("change", () => {
+    const e = +$("d-end").value;
+    setDay(Math.min(DAY_START, e - DAY_MIN_SPAN), e); // pull wake-up earlier if it would crowd
+  });
+
   $("free-toggle").checked = showFree;
   $("free-toggle").addEventListener("change", () => { showFree = $("free-toggle").checked; try { localStorage.setItem(LOCAL_KEY + "-free", showFree ? "1" : "0"); } catch (e) {} render(); });
 
@@ -876,7 +987,8 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
   // Storage is per browser AND per origin, so a file is the only way to carry a
   // week from one address or device to another.
   const EXPORT_VERSION = 1;
-  const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  // 24:00 is a real end time once bedtime can be midnight; fmt12 already reads it as 12 AM.
+  const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$|^24:00$/;
   const baseStatus = () => (mode === "db" ? "Synced" : "Saved in this browser only");
   const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
   const bNote = (t) => { $("b-sum").textContent = t || ""; };
@@ -1020,6 +1132,9 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
   // ------------------------------------------------------------------ boot
   renderWeek(); renderLabels();
   setInterval(() => { if (!$("scrim").hidden || !$("cscrim").hidden || !$("bscrim").hidden) return; render(); }, 5 * 60 * 1000);
+  // The grid redraws every five minutes, which is too coarse for a "now" bar;
+  // this only rewrites its own element, so it is safe to run while a dialog is open.
+  setInterval(renderNow, 30 * 1000);
 
   function startLocal() {
     mode = "local"; readLocal(); loaded.blocks = loaded.labels = true;
