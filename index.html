@@ -121,6 +121,8 @@ button.dayhead:hover { background: var(--bg); }
 button.dayhead svg { color: var(--muted); opacity: 0.6; }
 button.dayhead:hover svg { opacity: 1; color: var(--accent); }
 .dayhead.corner { border-right: 1px solid var(--line); }
+.dayhead.today { color: var(--accent); }
+.dayhead.today svg { color: var(--accent); opacity: 0.75; }
 .spine { position: relative; border-right: 1px solid var(--line); }
 .spine span { position: absolute; right: 6px; transform: translateY(-50%); font-family: var(--mono); font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .col { position: relative; border-right: 1px solid var(--line-soft); cursor: copy; }
@@ -129,8 +131,10 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
 .col .hl.half { border-top-style: dashed; opacity: 0.6; }
 .col.today { background: color-mix(in srgb, var(--accent) 4%, transparent); }
 .col.droptarget { background: color-mix(in srgb, var(--accent) 9%, transparent); }
-.nowline { position: absolute; left: 0; right: 0; border-top: 2px solid var(--accent); z-index: 4; pointer-events: none; }
-.nowline::before { content: ""; position: absolute; left: -4px; top: -5px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+/* The now line is white. On the dark ground that is all it needs; on the light one
+   the columns are white too, so a 1px dark ring keeps it visible without tinting it. */
+.nowline { position: absolute; left: 0; right: 0; border-top: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.38); z-index: 4; pointer-events: none; }
+.nowline::before { content: ""; position: absolute; left: -4px; top: -5px; width: 8px; height: 8px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.38); }
 
 .gap { position: absolute; left: 3px; right: 3px; border-radius: 6px; border: 1px dashed var(--line); background: repeating-linear-gradient(135deg, transparent 0 7px, var(--gap) 7px 8px); color: var(--muted); font-family: var(--mono); font-size: 10.5px; padding: 3px 6px; overflow: hidden; z-index: 0; }
 .gap:hover { border-color: var(--accent); color: var(--accent-ink); }
@@ -486,7 +490,7 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
 
     const corner = document.createElement("div"); corner.className = "dayhead corner"; grid.appendChild(corner);
     DAYS.forEach((d, i) => {
-      const h = document.createElement("button"); h.type = "button"; h.className = "dayhead";
+      const h = document.createElement("button"); h.type = "button"; h.className = "dayhead" + (i === todayIdx ? " today" : "");
       h.innerHTML = "<span></span>" + COPY_SVG; h.firstChild.textContent = d;
       h.title = "Copy " + DAYS_LONG[i] + " to other days"; h.setAttribute("aria-label", "Copy " + DAYS_LONG[i] + " to other days");
       h.addEventListener("click", () => openCopy(i));

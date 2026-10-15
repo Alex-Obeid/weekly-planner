@@ -3,7 +3,7 @@
  * Bump VERSION whenever index.html changes, or an installed copy can keep
  * serving the old one while offline. Navigations are network-first, so an
  * online launch always picks up a new build even if you forget. */
-const VERSION = "v6";
+const VERSION = "v7";
 const CACHE = "weekly-planner-" + VERSION;
 const PAGE = "./index.html";
 const SHELL = [

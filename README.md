@@ -10,7 +10,7 @@ be installed as a desktop app.
 
 ## Features
 
-- **Week grid over your waking hours**, Monday to Sunday, in 12-hour (AM/PM) time. Set *Awake ... to ...* above the grid and everything follows it: the spine, the free-time gaps and both share bars. Defaults to 7 AM–11 PM; bedtime can be midnight, and the shortest day you can set is four hours. Today's column is tinted and a line marks the current time.
+- **Week grid over your waking hours**, Monday to Sunday, in 12-hour (AM/PM) time. Set *Awake ... to ...* above the grid and everything follows it: the spine, the free-time gaps and both share bars. Defaults to 7 AM–11 PM; bedtime can be midnight, and the shortest day you can set is four hours. Today's name is in the accent colour and its column is tinted; a white line marks the current time.
 - **Add, edit and delete blocks.** Click any empty slot or free gap to add a block there; click a block to edit it. Each block has a title, label, day(s), start and end time (15-minute steps) and notes.
 - **Drag to move and resize.** Drag a block up/down to change its time or sideways to change its day; drag its bottom edge to change its length. Snaps to 15 minutes. On touch screens, press and hold a block briefly before dragging, so normal swipes still scroll.
 - **Repeating blocks.** Pick several days in the form to create a repeating block (shown with a ↻ icon). When editing one, choose *All repeats* or *Only this day*. Adding or removing days under *All repeats* adds or removes the copies.
