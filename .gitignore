@@ -3,3 +3,7 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+
+# personal schedule exports - keep out of the public repo
+my-week.json
+weekly-planner-*.json

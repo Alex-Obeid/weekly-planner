@@ -16,7 +16,8 @@ It is a single HTML file with no build step and no dependencies apart from Googl
 - **Clash warnings.** Overlapping blocks get a red outline and a "!" badge. A pill above the grid counts clashes and expands into a clickable list. The edit form also warns if the time you are setting overlaps something (it still lets you save).
 - **Free time.** Gaps of 30 minutes or more show as hatched "free · 1h 30m" areas; click one to fill it. A switch turns this off.
 - **Labels.** Colour-coded categories (class, study, gym…) that you can add, rename, recolour and delete.
-- **Share-of-hours bar.** One pill-shaped bar splits all scheduled hours by label, with a legend and an "All RCVD work" total for labels whose name contains "RCVD".
+- **Share bars, one per half of the week.** **Mon–Fri** and **Sat–Sun** get a pill-shaped bar each, because a weekday and a weekend are different kinds of day and a single average hides both. Each splits its own span (80 h and 32 h of 7 AM–11 PM) by label and ends with everything still unscheduled as a hatched **Free** segment, so each bar adds up to 100%. Segments are labelled with percentages — dropped automatically when a segment is too narrow to show one — and the legend below gives each label's **total hours**, listing only the labels used in that half. Hovering either shows both figures. Overlapping blocks are counted once when working out free time, so a clash never pushes it negative.
+- **Backup, export and import.** *Backup* downloads your whole week as a `.json` file or copies it to the clipboard, and takes it back in by file or paste — either added alongside what's already there or replacing it, behind a two-step confirm. This is how you move a week between browsers, devices and addresses.
 - **Light and dark themes**, following the system setting.
 
 ## Running it
@@ -24,6 +25,31 @@ It is a single HTML file with no build step and no dependencies apart from Googl
 Open `index.html` in any modern browser. That's it.
 
 To host it, enable **GitHub Pages** for this repository (Settings → Pages → Deploy from branch → `main` / root), and it will be served at `https://<user>.github.io/weekly-planner/`.
+
+## Installing it as an app
+
+Served over http(s), the planner is a PWA: open it in Chrome or Edge and choose
+**Install this site as an app** (the install icon at the right of the address bar, or
+⋯ → Apps → Install). You get a Start-menu and taskbar entry that opens in its own window
+with no browser chrome.
+
+Three pieces make that work, and none of them matter when the page is opened as a file:
+
+| File | Does what |
+|---|---|
+| `manifest.webmanifest` | Name, icons and `display: standalone`. Paths are relative, so it works both at a domain root and under `/weekly-planner/`. |
+| `sw.js` | Caches the app shell so it opens with no internet. Navigations are network-first, so an online launch still picks up a new build. |
+| `icons/` | Generated — **edit `tools/build-icons.py`, never the PNGs** (`python tools/build-icons.py`). |
+
+The page also calls `navigator.storage.persist()`, which asks the browser not to evict your
+week when disk runs low. Chrome grants this to installed apps; elsewhere it may decline,
+which changes nothing else.
+
+**When you change `index.html`, bump `VERSION` in `sw.js`.** An installed copy that is
+offline will otherwise keep serving the build it cached.
+
+Installing needs a served origin — `file://` cannot be installed. Opened as a file the page
+behaves exactly as before: no service worker, no manifest, everything else unchanged.
 
 ## Where data is saved
 
@@ -35,6 +61,25 @@ The page picks its storage when it loads:
 | Published as a claude.ai artifact with the `db` capability | The artifact's database (`blocks` collection, `settings/labels` document) | Synced across devices; the status pill shows "Synced". |
 
 The status text next to the buttons tells you which one is active ("Saved in this browser only" or "Synced").
+
+### Backing up and moving your week
+
+`localStorage` is scoped to one browser **and one address**. `file:///…/index.html`,
+`https://<user>.github.io/weekly-planner/` and `http://localhost:8000` are three separate
+origins holding three separate, unrelated weeks — entering your timetable at one does not
+make it appear at the others, and clearing site data erases it with no copy anywhere.
+
+The **Backup** button is the way across. Export writes a `weekly-planner-<date>.json`
+holding every block and label (internal ids are left out — they are regenerated on the way
+in, so an import can never collide with what is already there). Import takes that file back,
+or anything pasted into the box, and either adds it to the current week or replaces it.
+
+Adding matches incoming labels to local ones **by name**, creating only what is missing, so
+importing twice does not leave you with two "Class" labels. Repeating blocks keep their
+grouping but are re-keyed, so an added copy forms its own series rather than joining an
+existing one. Malformed blocks — a day outside 0–6, a time that isn't `HH:MM`, an end at or
+before its start — are dropped rather than imported, and a file with nothing usable in it is
+refused with the week untouched.
 
 ### Data model
 

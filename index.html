@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Weekly study timetable with drag-and-drop blocks, repeats, clash warnings and free-time gaps.">
 <title>Weekly Planner</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#F3F3F1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101010" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -51,7 +56,6 @@ h1 { font-size: 2.2rem; line-height: 1; text-transform: uppercase; }
 h1 .tag { color: var(--accent); }
 h2 { font-size: 1.45rem; text-transform: uppercase; }
 h3 { font-size: 1.25rem; text-transform: uppercase; letter-spacing: 0.03em; }
-.sub { color: var(--muted); max-width: 70ch; margin: 6px 0 0; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -80,16 +84,20 @@ button { cursor: pointer; }
 .clashlist button:hover { background: var(--surface); }
 .clashlist b { font-family: var(--display); font-size: 1rem; letter-spacing: 0.05em; text-transform: uppercase; margin-right: 6px; color: var(--danger); }
 
-.totals { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.totals { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.tgroup { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.thead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.thead .tname { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink); font-weight: 600; }
+.thead .tsub { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
 .stack { display: flex; height: 30px; border-radius: 999px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
 .seg { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; font-family: var(--mono); font-size: 11.5px; font-variant-numeric: tabular-nums; white-space: nowrap; box-shadow: inset -1px 0 0 rgba(0,0,0,0.12); }
 .seg:last-child { box-shadow: none; }
+.seg.free { background: repeating-linear-gradient(135deg, var(--surface) 0 7px, var(--gap) 7px 8px); color: var(--muted); }
+.legend i.free { background: repeating-linear-gradient(135deg, var(--surface) 0 4px, var(--gap) 4px 5px); }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { width: 10px; height: 10px; border-radius: 3px; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.12); }
 .legend b { font-family: var(--mono); font-weight: 500; color: var(--ink); }
-.legend .sum { color: var(--accent-ink); font-weight: 600; }
-.legend .sum b { color: var(--accent-ink); }
 
 /* week grid */
 .gridbox { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }
@@ -137,7 +145,12 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
 .labels { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px; }
 .lrow { display: flex; align-items: center; gap: 8px; padding: 6px; border: 1px solid var(--line-soft); border-radius: 8px; min-width: 0; }
-.lrow input[type="color"] { width: 32px; height: 28px; border: 1px solid var(--line); border-radius: 6px; padding: 1px; background: var(--surface); flex: none; }
+/* padding here leaves the swatch floating as a rectangle inside the rounded box,
+   so zero it out and round the swatch itself — it then fills the square. */
+.lrow input[type="color"] { width: 32px; height: 28px; border: 1px solid var(--line); border-radius: 6px; padding: 0; background: var(--surface); flex: none; overflow: hidden; -webkit-appearance: none; appearance: none; }
+.lrow input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.lrow input[type="color"]::-webkit-color-swatch { border: none; border-radius: 5px; }
+.lrow input[type="color"]::-moz-color-swatch { border: none; border-radius: 5px; }
 .lrow input[type="text"] { flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 6px; padding: 4px 6px; background: transparent; }
 .lrow input[type="text"]:hover, .lrow input[type="text"]:focus { border-color: var(--line); background: var(--bg); }
 .lrow .n { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
@@ -180,7 +193,6 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
 <div class="wrap">
   <header>
     <h1>Weekly <span class="tag">planner</span></h1>
-    <p class="sub">Your week as a timetable. Click a slot or free gap to add a block. Drag a block to move it, drag its bottom edge to resize, or click it to edit.</p>
   </header>
 
   <div class="totals" id="totals"></div>
@@ -192,6 +204,7 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
     </div>
     <div class="tools">
       <span class="status" id="status">Connecting…</span>
+      <button class="btn" id="backup-btn">Backup</button>
       <button class="btn" id="copy-btn">Copy day</button>
       <button class="btn primary" id="add-btn">+ Add block</button>
     </div>
@@ -272,6 +285,44 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
       <div class="r">
         <button type="button" class="btn" id="c-cancel">Cancel</button>
         <button type="submit" class="btn primary" id="c-go">Copy</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- backup: export / import -->
+<div class="scrim" id="bscrim" hidden>
+  <form class="modal" id="bform" novalidate>
+    <h3>Back up or move your week</h3>
+    <div class="hint" id="b-where"></div>
+    <div class="field">
+      <span class="lab">Export</span>
+      <div class="actions"><div class="l">
+        <button type="button" class="btn" id="b-file">Download .json</button>
+        <button type="button" class="btn" id="b-copy">Copy to clipboard</button>
+      </div></div>
+    </div>
+    <div class="field">
+      <label for="b-text">Import</label>
+      <textarea id="b-text" rows="4" placeholder="Paste an exported week here, or choose a file below"></textarea>
+      <div class="actions"><div class="l">
+        <button type="button" class="btn" id="b-pick">Choose file…</button>
+      </div></div>
+      <input type="file" id="b-input" accept="application/json,.json" hidden>
+    </div>
+    <div class="field">
+      <span class="lab">What happens to the week already here</span>
+      <div class="seg2" role="radiogroup" aria-label="Import mode">
+        <label><input type="radio" name="bmode" id="b-add" value="add" checked> Keep it, add the blocks</label>
+        <label><input type="radio" name="bmode" id="b-rep" value="replace"> Replace it</label>
+      </div>
+    </div>
+    <div class="hint" id="b-sum"></div>
+    <div class="err" id="b-err" role="alert"></div>
+    <div class="actions">
+      <div class="r">
+        <button type="button" class="btn" id="b-cancel">Close</button>
+        <button type="submit" class="btn primary" id="b-go">Import</button>
       </div>
     </div>
   </form>
@@ -496,32 +547,75 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
   }
 
   const fmtPct = (p) => (p < 10 ? p.toFixed(1) : String(Math.round(p))) + "%";
-  function renderTotals() {
-    const box = $("totals"); box.textContent = "";
-    const per = new Map(); let all = 0, rcvd = 0;
-    blocks.forEach((b) => { const m = Math.max(0, toMin(b.end) - toMin(b.start)); all += m; per.set(b.label || "", (per.get(b.label || "") || 0) + m); });
-    if (!all) return;
+  // A weekday and a weekend are different kinds of day, so each gets its own bar
+  // rather than one average that hides both. Each is a share of its own span.
+  const PERIODS = [
+    { name: "Mon–Fri", days: [0, 1, 2, 3, 4] },
+    { name: "Sat–Sun", days: [5, 6] },
+  ];
+  // Unscheduled minutes across the given days. Unions each day's blocks so a
+  // clash does not count its overlap twice and free time stays >= 0.
+  function busyMin(days) {
+    let total = 0;
+    days.forEach((d) => {
+      const iv = blocks.filter((b) => b.day === d).map((b) => [clamp(toMin(b.start), DAY_START, DAY_END), clamp(toMin(b.end), DAY_START, DAY_END)]).filter((x) => x[1] > x[0]).sort((a, b) => a[0] - b[0]);
+      let cur = DAY_START;
+      iv.forEach(([s, e]) => { if (e > cur) { total += e - Math.max(s, cur); cur = e; } });
+    });
+    return total;
+  }
+  function periodGroup(period) {
+    const inPeriod = new Set(period.days);
+    const span = period.days.length * (DAY_END - DAY_START);
+    const per = new Map(); let all = 0;
+    blocks.forEach((b) => {
+      if (!inPeriod.has(b.day)) return;
+      const m = Math.max(0, toMin(b.end) - toMin(b.start));
+      all += m; per.set(b.label || "", (per.get(b.label || "") || 0) + m);
+    });
+    const freeM = Math.max(0, span - busyMin(period.days));
+    const total = all + freeM;
+    if (!total) return null;
     const rows = labels.map((l) => ({ name: l.name, color: l.color, m: per.get(l.id) || 0 })).filter((r) => r.m > 0);
     const known = new Set(labels.map((l) => l.id)); let other = 0;
     per.forEach((m, k) => { if (!known.has(k)) other += m; });
     if (other) rows.push({ name: "No label", color: "#9A9A96", m: other });
     rows.sort((a, b) => b.m - a.m);
-    rows.forEach((r) => { if (/rcvd/i.test(r.name)) rcvd += r.m; });
+    if (freeM) rows.push({ name: "Free", free: true, m: freeM });
+
+    const group = document.createElement("div"); group.className = "tgroup";
+    const head = document.createElement("div"); head.className = "thead";
+    const name = document.createElement("span"); name.className = "tname"; name.textContent = period.name;
+    const sub = document.createElement("span"); sub.className = "tsub";
+    sub.textContent = (fmtDur(all) || "0h") + " of " + fmtDur(span) + " scheduled";
+    head.append(name, sub);
+
     const stack = document.createElement("div"); stack.className = "stack"; stack.setAttribute("role", "img");
-    stack.setAttribute("aria-label", "Share of scheduled hours: " + rows.map((r) => r.name + " " + fmtPct(100 * r.m / all)).join(", "));
+    stack.setAttribute("aria-label", period.name + ", 7 AM to 11 PM: " + rows.map((r) => r.name + " " + fmtDur(r.m) + ", " + fmtPct(100 * r.m / total)).join(", "));
     const legend = document.createElement("div"); legend.className = "legend";
-    if (rcvd) { const s = document.createElement("span"); s.className = "sum"; s.textContent = "All RCVD work "; const b = document.createElement("b"); b.textContent = fmtPct(100 * rcvd / all); s.appendChild(b); legend.appendChild(s); }
+    // The bar segments carry the percentages; the legend carries the hours.
     rows.forEach((r) => {
-      const pct = 100 * r.m / all;
-      const seg = document.createElement("div"); seg.className = "seg"; seg.style.flex = "0 0 " + pct + "%"; seg.style.background = r.color; seg.style.color = textOn(r.color);
-      seg.title = r.name + ": " + fmtPct(pct) + " (" + (r.m / 60).toFixed(1).replace(/\.0$/, "") + " h)";
+      const pct = 100 * r.m / total;
+      const seg = document.createElement("div"); seg.className = r.free ? "seg free" : "seg"; seg.style.flex = "0 0 " + pct + "%";
+      if (!r.free) { seg.style.background = r.color; seg.style.color = textOn(r.color); }
+      seg.title = r.name + ": " + fmtDur(r.m) + " · " + fmtPct(pct) + " of " + period.name;
       if (pct >= 6) seg.textContent = fmtPct(pct);
       stack.appendChild(seg);
-      const s = document.createElement("span"); const i = document.createElement("i"); i.style.background = r.color;
-      const b = document.createElement("b"); b.textContent = fmtPct(pct);
+      const s = document.createElement("span"); const i = document.createElement("i");
+      if (r.free) i.className = "free"; else i.style.background = r.color;
+      s.title = seg.title;
+      const b = document.createElement("b"); b.textContent = fmtDur(r.m);
       s.append(i, document.createTextNode(r.name + " "), b); legend.appendChild(s);
     });
-    box.append(stack, legend);
+    group.append(head, stack, legend);
+    return group;
+  }
+  function renderTotals() {
+    const box = $("totals"); box.textContent = "";
+    PERIODS.forEach((p) => { const g = periodGroup(p); if (g) box.appendChild(g); });
+    // The percentage threshold above is only a guess at what will fit; now that
+    // the bars are laid out, drop any label that is actually being clipped.
+    box.querySelectorAll(".seg").forEach((s) => { if (s.textContent && s.scrollWidth > s.clientWidth) s.textContent = ""; });
   }
 
   // ------------------------------------------------------------------ drag to move / resize
@@ -685,7 +779,7 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
   function closeForm() { $("scrim").hidden = true; editing = null; series = null; }
   $("f-cancel").addEventListener("click", closeForm);
   $("scrim").addEventListener("click", (e) => { if (e.target === $("scrim")) closeForm(); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (!$("scrim").hidden) closeForm(); if (!$("cscrim").hidden) closeCopy(); } });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (!$("scrim").hidden) closeForm(); if (!$("cscrim").hidden) closeCopy(); if (!$("bscrim").hidden) closeBackup(); } });
   $("add-btn").addEventListener("click", () => openForm(null, { day: (new Date().getDay() + 6) % 7, start: "09:00", end: "10:00" }));
 
   $("f-dup").addEventListener("click", () => {
@@ -778,9 +872,154 @@ button.dayhead:hover svg { opacity: 1; color: var(--accent); }
   $("free-toggle").checked = showFree;
   $("free-toggle").addEventListener("change", () => { showFree = $("free-toggle").checked; try { localStorage.setItem(LOCAL_KEY + "-free", showFree ? "1" : "0"); } catch (e) {} render(); });
 
+  // ------------------------------------------------------------------ backup: export / import
+  // Storage is per browser AND per origin, so a file is the only way to carry a
+  // week from one address or device to another.
+  const EXPORT_VERSION = 1;
+  const HHMM = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  const baseStatus = () => (mode === "db" ? "Synced" : "Saved in this browser only");
+  const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
+  const bNote = (t) => { $("b-sum").textContent = t || ""; };
+  const bErr = (t) => { $("b-err").textContent = t || ""; };
+  let bArmed = false;
+
+  function exportText() {
+    return JSON.stringify({ app: "rcvd-weekly-planner", version: EXPORT_VERSION, exported: new Date().toISOString(), labels, blocks: blocks.map((b) => bodyOf(b)) }, null, 2);
+  }
+  function resetArm() {
+    bArmed = false; const g = $("b-go");
+    g.className = "btn primary"; g.textContent = $("b-rep").checked ? "Replace my week" : "Import";
+  }
+  function downloadWeek() {
+    const d = new Date(), p = (n) => String(n).padStart(2, "0");
+    const name = "weekly-planner-" + d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + ".json";
+    const url = URL.createObjectURL(new Blob([exportText()], { type: "application/json" }));
+    const a = document.createElement("a"); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    bNote("Exported " + plural(blocks.length, "block") + " as " + name + ".");
+  }
+  async function copyWeek() {
+    const text = exportText();
+    try {
+      await navigator.clipboard.writeText(text);
+      bNote("Copied " + plural(blocks.length, "block") + " to the clipboard.");
+    } catch (e) {
+      $("b-text").value = text; $("b-text").focus(); $("b-text").select();
+      bNote("Clipboard blocked here — your export is in the box below, copy it with Ctrl/Cmd+C.");
+    }
+  }
+  function parseWeek(text) {
+    let o; try { o = JSON.parse(text); } catch (e) { throw new Error("That isn't valid JSON."); }
+    if (!o || typeof o !== "object" || !Array.isArray(o.blocks)) throw new Error("That doesn't look like a planner export.");
+    const labs = (Array.isArray(o.labels) ? o.labels : []).filter((l) => l && typeof l.id === "string" && typeof l.name === "string")
+      .map((l) => ({ id: l.id, name: l.name.slice(0, 80), color: /^#[0-9a-fA-F]{6}$/.test(l.color || "") ? l.color : "#9A9A96" }));
+    const out = [];
+    o.blocks.forEach((b) => {
+      if (!b || typeof b !== "object") return;
+      const day = Number(b.day);
+      if (!Number.isInteger(day) || day < 0 || day > 6) return;
+      if (!HHMM.test(b.start || "") || !HHMM.test(b.end || "")) return;
+      if (toMin(b.end) <= toMin(b.start)) return;
+      const r = { day, start: b.start, end: b.end, title: String(b.title || "").slice(0, 200), label: String(b.label || ""), note: String(b.note || "").slice(0, 2000) };
+      if (typeof b.series === "string") r.series = b.series;
+      out.push(r);
+    });
+    if (!out.length) throw new Error("No usable blocks in that export.");
+    return { labels: labs, blocks: out };
+  }
+  function applyImport(data, replace) {
+    if (replace) {
+      const removes = blocks.map((b) => b.id);
+      const saves = data.blocks.map((b) => ({ id: uid(), ...b }));
+      saveLabels(data.labels); safeCommit(saves, removes);
+      return saves.length;
+    }
+    // Adding: imported label ids mean nothing here, so match them up by name and
+    // create whatever is missing, then point the incoming blocks at the local ids.
+    const byName = new Map(labels.map((l) => [l.name.toLowerCase(), l]));
+    const map = new Map(), added = [];
+    data.labels.forEach((l) => {
+      const hit = byName.get(l.name.toLowerCase());
+      if (hit) { map.set(l.id, hit.id); return; }
+      const nl = { id: uid(), name: l.name, color: l.color };
+      added.push(nl); byName.set(nl.name.toLowerCase(), nl); map.set(l.id, nl.id);
+    });
+    if (added.length) saveLabels(labels.concat(added));
+    const sMap = new Map();
+    const saves = data.blocks.map((b) => {
+      const o = { id: uid(), ...b, label: map.get(b.label) || "" };
+      if (b.series) { if (!sMap.has(b.series)) sMap.set(b.series, uid()); o.series = sMap.get(b.series); }
+      return o;
+    });
+    safeCommit(saves, []);
+    return saves.length;
+  }
+  function previewImport() {
+    const t = $("b-text").value.trim();
+    if (!t) { bNote(""); return; }
+    try { const d = parseWeek(t); bNote(plural(d.blocks.length, "block") + " and " + plural(d.labels.length, "label") + " ready to import."); }
+    catch (e) { bNote(""); }
+  }
+  function openBackup() {
+    $("b-text").value = ""; bNote(""); bErr(""); $("b-add").checked = true; resetArm();
+    $("b-where").textContent = mode === "db"
+      ? "This week is synced to this artifact. Export it to keep a copy of your own."
+      : "This week is saved in this browser only, under this exact address (" + location.origin + "). Export it to keep a copy, or to move it to another browser, device or address.";
+    $("bscrim").hidden = false; setTimeout(() => $("b-text").focus(), 0);
+  }
+  function closeBackup() { $("bscrim").hidden = true; }
+  $("backup-btn").addEventListener("click", openBackup);
+  $("b-cancel").addEventListener("click", closeBackup);
+  $("bscrim").addEventListener("click", (e) => { if (e.target === $("bscrim")) closeBackup(); });
+  $("b-file").addEventListener("click", downloadWeek);
+  $("b-copy").addEventListener("click", copyWeek);
+  $("b-pick").addEventListener("click", () => $("b-input").click());
+  $("b-input").addEventListener("change", () => {
+    const f = $("b-input").files && $("b-input").files[0];
+    $("b-input").value = ""; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { $("b-text").value = String(r.result || ""); bErr(""); resetArm(); previewImport(); };
+    r.onerror = () => bErr("Couldn't read that file.");
+    r.readAsText(f);
+  });
+  $("b-text").addEventListener("input", () => { bErr(""); resetArm(); previewImport(); });
+  [$("b-add"), $("b-rep")].forEach((el) => el.addEventListener("change", () => { resetArm(); previewImport(); }));
+  $("bform").addEventListener("submit", (e) => {
+    e.preventDefault(); bErr("");
+    const t = $("b-text").value.trim();
+    if (!t) { bErr("Paste an export, or choose a file first."); return; }
+    let d; try { d = parseWeek(t); } catch (err) { bErr(err.message); return; }
+    const replace = $("b-rep").checked;
+    if (replace && !bArmed) {
+      bArmed = true; const g = $("b-go"); g.className = "btn danger armed";
+      g.textContent = "Confirm replace — this deletes " + plural(blocks.length, "block");
+      setTimeout(() => { if (bArmed) resetArm(); }, 3500);
+      return;
+    }
+    const n = applyImport(d, replace);
+    closeBackup();
+    setStatus(replace ? "Replaced with " + plural(n, "block") : "Added " + plural(n, "block"));
+    setTimeout(() => setStatus(baseStatus()), 3000);
+  });
+
+  // ------------------------------------------------------------------ installable app
+  // Both of these only exist over http(s); opened as a file the page just runs
+  // as before, so never let either one throw into the rest of boot.
+  if (location.protocol === "http:" || location.protocol === "https:") {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    }
+    // Ask the browser not to evict the week when disk runs low. Chrome grants
+    // this silently to installed apps; elsewhere it may decline, which is fine.
+    if (navigator.storage && navigator.storage.persist) {
+      navigator.storage.persisted().then((p) => (p ? null : navigator.storage.persist())).catch(() => {});
+    }
+  }
+
   // ------------------------------------------------------------------ boot
   renderWeek(); renderLabels();
-  setInterval(() => { if (!$("scrim").hidden || !$("cscrim").hidden) return; render(); }, 5 * 60 * 1000);
+  setInterval(() => { if (!$("scrim").hidden || !$("cscrim").hidden || !$("bscrim").hidden) return; render(); }, 5 * 60 * 1000);
 
   function startLocal() {
     mode = "local"; readLocal(); loaded.blocks = loaded.labels = true;

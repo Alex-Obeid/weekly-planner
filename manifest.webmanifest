@@ -1,0 +1,15 @@
+{
+  "name": "Weekly Planner",
+  "short_name": "Planner",
+  "description": "A weekly timetable for planning study time around a fixed class schedule.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F3F3F1",
+  "theme_color": "#F3F3F1",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
